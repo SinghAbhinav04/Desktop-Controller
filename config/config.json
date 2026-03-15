@@ -1,0 +1,8 @@
+{
+  "camera_index": 0,
+  "fps_limit": 60,
+  "smoothing_factor": 0.35,
+  "gesture_frames_required": 2,
+  "confidence_threshold": 0.6,
+  "movement_threshold": 0.005
+}
