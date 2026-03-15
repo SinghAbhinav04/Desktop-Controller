@@ -22,6 +22,7 @@ class GestureDetector:
     SWIPE_OUT = "SWIPE_OUT"
     SWIPE_IN = "SWIPE_IN"
     SCROLL = "SCROLL"
+    MINIMIZE = "MINIMIZE"
     NONE = "NONE"
 
     def __init__(self):
@@ -52,7 +53,7 @@ class GestureDetector:
         self.swipe_cooldown = 0.6 # 600ms
         
         # Hardcoded pinch distance thresholds (normalized coordinates)
-        self.pinch_threshold = 0.04
+        self.pinch_threshold = 0.06
 
     def _load_config(self) -> dict:
         if os.path.exists(self.config_path):
@@ -159,20 +160,20 @@ class GestureDetector:
         pinky_up = self._get_distance(lm[PINKY_TIP], wrist) > self._get_distance(lm[18], wrist)
         
         if lock_active:
-            # Tap-to-click: When locked, check if the tip is closer to the wrist than the PIP joint
-            # This is the old, reliable method that worked well.
-            index_is_curled = self._get_distance(lm[INDEX_TIP], wrist) < self._get_distance(lm[6], wrist)
+            # Tap-to-click: When locked, check if the index fingertip (landmark 8)
+            # is touching or very close to the PIP joint (landmark 6, 3rd point from top).
+            # This is the most intuitive and reliable curl detection.
+            tip_to_pip = self._get_distance(lm[INDEX_TIP], lm[6])
+            index_is_curled = tip_to_pip < 0.06  # Close enough = finger is bent
             
             if index_is_curled:
                 detected_raw = self.LEFT_CLICK
             else:
                 detected_raw = self.CURSOR_LOCK
             
-        # 1. Right Click: Removed old pinch right click to prevent conflicts.
-
-        # 2. Left Click / Drag: Thumb and Index pinched
-        elif thumb_index_dist < self.pinch_threshold and not middle_up and not ring_up and not pinky_up:
-            detected_raw = self.LEFT_CLICK # We evaluate if it's a drag later based on time
+        # 1. Minimize App: Thumb tip touches Index tip (pinch) — any finger position is OK
+        elif thumb_index_dist < self.pinch_threshold:
+            detected_raw = self.MINIMIZE
             
         # 3. Scroll: Index and Middle fingers extended safely apart
         elif index_up and middle_up and not ring_up and not pinky_up:
@@ -199,10 +200,11 @@ class GestureDetector:
         current_time = time.time()
         pos = (lm[INDEX_TIP].x, lm[INDEX_TIP].y) # Base position off index tip
 
-        if self.current_gesture == self.RIGHT_CLICK:
+        if self.current_gesture == self.MINIMIZE:
             if self.gesture_frame_count == self.frames_required:
-                self.last_right_click_time = current_time
-                return GestureEvent(self.RIGHT_CLICK, 1.0, pos)
+                if current_time - getattr(self, 'last_minimize_time', 0) > 1.5:  # 1.5s cooldown
+                    self.last_minimize_time = current_time
+                    return GestureEvent(self.MINIMIZE, 1.0, pos)
 
         elif self.current_gesture == self.LEFT_CLICK:
             # Check for hold (DRAG)

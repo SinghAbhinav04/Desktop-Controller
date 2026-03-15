@@ -17,10 +17,10 @@ class MouseController:
         # Get host screen size
         self.screen_width, self.screen_height = pyautogui.size()
         
-        # Bounding box margin (5%) to easily reach screen corners
-        # If the hand moves within the inner 90% of the camera view, it spans 100% of the screen.
-        self.margin_x = 0.05
-        self.margin_y = 0.05
+        # Bounding box margin (8%) to easily reach screen corners
+        # If the hand moves within the inner 84% of the camera view, it spans 100% of the screen.
+        self.margin_x = 0.08
+        self.margin_y = 0.08
         
         # Track drag state so we don't spam mousedown events
         self.is_dragging = False
@@ -118,3 +118,15 @@ class MouseController:
                 pyautogui.scroll(scroll_amount, _pause=False)
                 self.last_scroll_y = y
 
+    def minimize_app(self):
+        """Minimizes the frontmost macOS window using System Events keystroke simulation."""
+        import subprocess
+        self.logger.info("Minimizing Application (Cmd+M via System Events)")
+        try:
+            # Fast, non-blocking: simulate Cmd+M keystroke via System Events
+            subprocess.Popen(
+                ['osascript', '-e', 'tell application "System Events" to keystroke "m" using command down'],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except Exception as e:
+            self.logger.error(f"Minimize failed: {e}")

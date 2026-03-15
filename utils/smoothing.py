@@ -58,10 +58,11 @@ class PositionSmoother:
         Replaced the custom EMA with the 1 Euro Filter algorithm.
         It eliminates jitter entirely at slow speeds while remaining instantly responsive at high speeds.
         """
-        # We inject our own VR-grade constants here, giving massive stability
-        # min_cutoff: Heavy smoothing for slow motions
-        # beta: Ramps up speed massively when moving fast
-        self.filter = OneEuroFilter(min_cutoff=0.01, beta=2.0)
+        # Butter-smooth constants:
+        # min_cutoff=0.02: Gentle smoothing at rest to kill micro-jitter
+        # beta=5.0: Aggressively ramps up responsiveness during fast motion
+        #           so the cursor snaps to your hand position with near-zero lag
+        self.filter = OneEuroFilter(min_cutoff=0.02, beta=5.0)
 
     def smooth(self, new_x: float, new_y: float) -> Tuple[float, float]:
         return self.filter(time.time(), new_x, new_y)

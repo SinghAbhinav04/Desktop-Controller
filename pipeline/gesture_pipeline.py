@@ -245,6 +245,10 @@ class GesturePipeline:
                      self.latest_gesture_name = "MISSION_CONTROL_CLOSE"
                      self.mouse_controller.close_mission_control()
                 
+                elif event.type == GestureDetector.MINIMIZE:
+                     self.latest_gesture_name = "MINIMIZE_APP"
+                     self.mouse_controller.minimize_app()
+                
                 self.profiling['mouse'] = time.time() - t0
                 
             except queue.Empty:
